@@ -28,7 +28,7 @@ FPS = 120
 SCREEN_WIDTH = 900
 SCREEN_HEIGHT = 900
 
-CELL_SIZE = 5
+CELL_SIZE = 2
 ROWS = SCREEN_WIDTH // CELL_SIZE
 COLUMNS = SCREEN_HEIGHT // CELL_SIZE
 CELL_COUNT = ROWS * COLUMNS
@@ -38,15 +38,16 @@ FONT_COLOR = pygame.Color('coral')
 
 
 class Cell:
-    __slots__ = ['cell_id', 'x', 'y', 'is_live']
+    __slots__ = ['cell_id', 'x', 'y', 'is_alive', 'next_state']
 
     def __init__(self, x: int, y: int, is_alive: bool):
         self.x = x
         self.y = y
-        self.is_live = is_alive
+        self.is_alive = is_alive
+        self.next_state = False
 
     def redraw(self, game_surface: pygame.Surface):
-        if self.is_live:
+        if self.is_alive:
             pygame.draw.rect(game_surface, CELL_COLOR,
                              (self.x, self.y, CELL_SIZE, CELL_SIZE))
 
@@ -70,13 +71,13 @@ class GameOfLive:
 
     def _check_left(self, i: int) -> bool:
         if not i % ROWS == 0:
-            if self.cells[i - 1].is_live:
+            if self.cells[i - 1].is_alive:
                 return True
         return False
 
     def _check_right(self, i: int) -> bool:
         if not i % ROWS == ROWS - 1:
-            if self.cells[i + 1].is_live:
+            if self.cells[i + 1].is_alive:
                 return True
         return False
 
@@ -87,32 +88,33 @@ class GameOfLive:
         # check top
         if i / ROWS >= 1:
             t = i - ROWS
-            neighbours += self.cells[t].is_live
+            neighbours += self.cells[t].is_alive
             neighbours += self._check_left(t)
             neighbours += self._check_right(t)
 
         # check bottom
         if (i / ROWS) < COLUMNS - 1:
             b = i + ROWS
-            neighbours += self.cells[b].is_live
+            neighbours += self.cells[b].is_alive
             neighbours += self._check_left(b)
             neighbours += self._check_right(b)
 
         return neighbours
 
     def _update_cells(self):
-        next_gen = []
         for i, c in enumerate(self.cells):
             neighbours = self._count_live_neighbours(i)
             will_live = False
-            if c.is_live:
+            if c.is_alive:
                 if 2 <= neighbours <= 3:
                     will_live = True
             else:
                 if neighbours == 3:
                     will_live = True
-            next_gen.append(Cell(c.x, c.y, will_live))
-        self.cells = next_gen
+            c.next_state = will_live
+
+        for c in self.cells:
+            c.is_alive = c.next_state
 
     def _redraw_fps_txt(self, game_surface: pygame.Surface, fps: float):
         fps_str = str(int(fps))
