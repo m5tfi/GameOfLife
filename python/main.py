@@ -4,6 +4,7 @@ Python 3.9.0
 pygame 2.0.1
 --------------------------------------------------------------------------------
 Controls:
+        r -> resets the game.
         p -> toggle game pause.
     space -> get the next generation when the game is paused, otherwise,
              it's done automatically.
@@ -132,6 +133,10 @@ class GameOfLive:
         self._redraw_fps_txt(game_surface, self.clock.get_fps())
         pygame.display.flip()
 
+    def _reset(self):
+        for c in self.cells:
+            c.is_alive = randint(1, 5) > 2.5
+
     def _catch_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -143,6 +148,8 @@ class GameOfLive:
                     self.game_is_paused = not self.game_is_paused
                 if event.key == pygame.K_SPACE and self.game_is_paused:
                     self._update_cells()
+                if event.key == pygame.K_r:
+                    self._reset()
 
     def run(self):
         while self.game_is_running:
