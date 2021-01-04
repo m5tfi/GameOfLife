@@ -29,7 +29,7 @@ FPS = 120
 SCREEN_WIDTH = 900
 SCREEN_HEIGHT = 900
 
-CELL_SIZE = 2
+CELL_SIZE = 10
 ROWS = SCREEN_WIDTH // CELL_SIZE
 COLUMNS = SCREEN_HEIGHT // CELL_SIZE
 CELL_COUNT = ROWS * COLUMNS
@@ -72,14 +72,12 @@ class GameOfLive:
 
     def _check_left(self, i: int) -> bool:
         if not i % ROWS == 0:
-            if self.cells[i - 1].is_alive:
-                return True
+            return self.cells[i - 1].is_alive
         return False
 
     def _check_right(self, i: int) -> bool:
         if not i % ROWS == ROWS - 1:
-            if self.cells[i + 1].is_alive:
-                return True
+            return self.cells[i + 1].is_alive
         return False
 
     def _count_live_neighbours(self, i: int) -> int:
