@@ -39,7 +39,7 @@ FONT_COLOR = pygame.Color('coral')
 
 
 class Cell:
-    __slots__ = ['cell_id', 'x', 'y', 'is_alive', 'next_state']
+    __slots__ = ['x', 'y', 'is_alive', 'next_state']
 
     def __init__(self, x: int, y: int, is_alive: bool):
         self.x = x
