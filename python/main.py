@@ -29,7 +29,7 @@ FPS = 120
 SCREEN_WIDTH = 900
 SCREEN_HEIGHT = 900
 
-CELL_SIZE = 10
+CELL_SIZE = 5
 ROWS = SCREEN_WIDTH // CELL_SIZE
 COLUMNS = SCREEN_HEIGHT // CELL_SIZE
 CELL_COUNT = ROWS * COLUMNS
@@ -68,7 +68,7 @@ class GameOfLive:
         for y in range(COLUMNS):
             for x in range(ROWS):
                 self.cells.append(
-                    Cell(x * CELL_SIZE, y * CELL_SIZE, randint(1, 5) > 2.5))
+                    Cell(x * CELL_SIZE, y * CELL_SIZE, randint(0, 1) > 0.5))
 
     def _check_left(self, i: int) -> bool:
         if not i % ROWS == 0:
@@ -131,9 +131,9 @@ class GameOfLive:
         self._redraw_fps_txt(game_surface, self.clock.get_fps())
         pygame.display.flip()
 
-    def _reset(self):
+    def _reset_cells(self):
         for c in self.cells:
-            c.is_alive = randint(1, 5) > 2.5
+            c.is_alive = randint(0, 1)
 
     def _catch_events(self):
         for event in pygame.event.get():
@@ -147,7 +147,7 @@ class GameOfLive:
                 if event.key == pygame.K_SPACE and self.game_is_paused:
                     self._update_cells()
                 if event.key == pygame.K_r:
-                    self._reset()
+                    self._reset_cells()
 
     def run(self):
         while self.game_is_running:
