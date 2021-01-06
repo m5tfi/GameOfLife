@@ -4,6 +4,10 @@ Python 3.9.0
 pygame 2.0.1
 --------------------------------------------------------------------------------
 Controls:
+        c -> toggle state colors:
+                red = just died
+                green = new born
+                black = no change
         r -> resets the game.
         p -> toggle game pause.
     space -> get the next generation when the game is paused, otherwise,
@@ -34,22 +38,38 @@ ROWS = SCREEN_WIDTH // CELL_SIZE
 COLUMNS = SCREEN_HEIGHT // CELL_SIZE
 CELL_COUNT = ROWS * COLUMNS
 
-CELL_COLOR = pygame.Color('black')
+JUST_DIED_CELL_COLOR = pygame.Color('red')
+LIVE_CELL_COLOR = pygame.Color('black')
+JUST_BORN_CELL_COLOR = pygame.Color('green')
 FONT_COLOR = pygame.Color('coral')
+
+DRAW_COLORED = True
 
 
 class Cell:
-    __slots__ = ['x', 'y', 'is_alive', 'next_state']
+    __slots__ = ['x', 'y', 'prev_state', 'is_alive', 'next_state']
 
     def __init__(self, x: int, y: int, is_alive: bool):
         self.x = x
         self.y = y
+        self.prev_state = is_alive
         self.is_alive = is_alive
         self.next_state = False
 
     def redraw(self, game_surface: pygame.Surface):
-        if self.is_alive:
-            pygame.draw.rect(game_surface, CELL_COLOR,
+        color = None
+        if not DRAW_COLORED and self.is_alive:
+            color = LIVE_CELL_COLOR
+        elif DRAW_COLORED:
+            if self.prev_state and self.is_alive:
+                color = LIVE_CELL_COLOR
+            elif self.is_alive:
+                color = JUST_BORN_CELL_COLOR
+            elif self.prev_state:
+                color = JUST_DIED_CELL_COLOR
+
+        if color:
+            pygame.draw.rect(game_surface, color,
                              (self.x, self.y, CELL_SIZE, CELL_SIZE))
 
 
@@ -113,6 +133,7 @@ class GameOfLive:
             c.next_state = will_live
 
         for c in self.cells:
+            c.prev_state = c.is_alive
             c.is_alive = c.next_state
 
     def _redraw_fps_txt(self, game_surface: pygame.Surface, fps: float):
@@ -134,6 +155,7 @@ class GameOfLive:
     def _reset_cells(self):
         for c in self.cells:
             c.is_alive = randint(0, 1)
+            c.prev_state = c.is_alive
 
     def _catch_events(self):
         for event in pygame.event.get():
@@ -148,6 +170,9 @@ class GameOfLive:
                     self._update_cells()
                 if event.key == pygame.K_r:
                     self._reset_cells()
+                if event.key == pygame.K_c:
+                    global DRAW_COLORED
+                    DRAW_COLORED = not DRAW_COLORED
 
     def run(self):
         while self.game_is_running:
