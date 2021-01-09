@@ -32,7 +32,7 @@ from random import randint
 import pygame
 
 pyximport.install(language_level='3str')
-import gol
+import gol2 as gol
 
 FPS = 120
 SCREEN_WIDTH = 900
