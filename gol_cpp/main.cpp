@@ -4,7 +4,7 @@
 
 inline constexpr int SCREEN_WIDTH{900};
 inline constexpr int SCREEN_HEIGHT{900};
-inline constexpr int CELL_SIZE{10};
+inline constexpr int CELL_SIZE{5};
 inline constexpr int ROWS{SCREEN_WIDTH / CELL_SIZE};
 inline constexpr int COLUMNS{SCREEN_HEIGHT / CELL_SIZE};
 inline constexpr int CELL_COUNT{ROWS * COLUMNS};
