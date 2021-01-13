@@ -2,6 +2,6 @@
 /.vscode
 /.idea
 
-# python
-/python/__pycache__
-/python/.venv
+# gol_python
+/gol_python/__pycache__
+/gol_python/.venv
