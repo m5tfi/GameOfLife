@@ -7,24 +7,11 @@ replicate [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_
 
 ## Languages
 
-### Python
-
-Fixing screen size to 900 x 900 px and cell size to 5 x 5 px.
-
-- [v1](https://github.com/m5tfi/GameOfLife/blob/master/python/v1):
-  10 fps using Python3.9 + pygame2
-- [v2](https://github.com/m5tfi/GameOfLife/blob/master/python/v2):
-  25 fps using Python3.9 + cython0.29 + pygame2
-- [v3](https://github.com/m5tfi/GameOfLife/blob/master/python/v3):
-  120 fps using Python3.9 + cython0.29 + pygame2
-
-### Javascript
-
-(didn't start yet)
-
-### C++
-
-(didn't start yet)
+- [x] **[Python](https://github.com/m5tfi/GameOfLife/blob/master/gol_python)**: 
+  150-200 fps with `cell_size=5` and `screen_size=900x900`.
+- [ ] **[C++](https://github.com/m5tfi/GameOfLife/blob/master/gol_cpp)**: my 
+  implementation is good enough yet.
+- [ ] Javascript
 
 ---
 
