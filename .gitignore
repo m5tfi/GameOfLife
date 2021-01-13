@@ -5,3 +5,8 @@
 # gol_python
 /gol_python/__pycache__
 /gol_python/.venv
+
+# gol_cpp
+/gol_cpp/.idea
+/gol_cpp/.vscode
+/gol_cpp/cmake-build-debug
