@@ -14,72 +14,69 @@ inline const sf::Color COLOR_DEAD_CELL{sf::Color::White};
 inline const sf::Color COLOR_JUST_DIED_CELL{sf::Color::Red};
 inline const sf::Color COLOR_JUST_BORN_CELL{sf::Color::Green};
 
-sf::RectangleShape g_rects[ROWS][COLUMNS];
-bool g_prev_state[ROWS][COLUMNS]{};
-bool g_current_state[ROWS][COLUMNS]{};
-bool g_next_state[ROWS][COLUMNS]{};
+sf::RectangleShape g_rects[CELL_COUNT];
+bool g_prev_state[CELL_COUNT]{};
+bool g_current_state[CELL_COUNT]{};
+bool g_next_state[CELL_COUNT]{};
 
 bool g_draw_colored{true};
 bool g_is_paused{false};
 
-bool get_random_bool()
-{
-  return std::rand() > RAND_MAX / 2;
-}
+bool get_random_bool() { return std::rand() > RAND_MAX / 2; }
 
 void reset_cells()
 {
-  for (int y{0}; y < COLUMNS; ++y) {
-    for (int x{0}; x < ROWS; ++x) {
-      g_prev_state[x][y] = false;
-      g_current_state[x][y] = get_random_bool();
-      g_next_state[x][y] = false;
-    }
+  for (int i{0}; i < CELL_COUNT; ++i) {
+    g_prev_state[i] = false;
+    g_current_state[i] = get_random_bool();
+    g_next_state[i] = false;
   }
 }
 
 void init_rects()
 {
+  int i{0};
   for (int y{0}; y < COLUMNS; ++y) {
     for (int x{0}; x < ROWS; ++x) {
-      g_rects[x][y] = sf::RectangleShape();
-      g_rects[x][y].setSize(sf::Vector2((float) CELL_SIZE, (float) CELL_SIZE));
-      g_rects[x][y].setPosition((float) x * CELL_SIZE, (float) y * CELL_SIZE);
+      g_rects[i] = sf::RectangleShape();
+      g_rects[i].setSize(sf::Vector2((float)CELL_SIZE, (float)CELL_SIZE));
+      g_rects[i].setPosition((float)x * CELL_SIZE, (float)y * CELL_SIZE);
+      ++i;
     }
   }
 }
 
-bool check_left(int x, int y)
+bool check_left(const int i)
 {
-  if (x != 0)
-    return g_current_state[x - 1][y];
+  if (i % ROWS != 0) return g_current_state[i - 1];
   return false;
 }
 
-bool check_right(int x, int y)
+bool check_right(const int i)
 {
-  if (x < ROWS)
-    return g_current_state[x + 1][y];
+  if (i % ROWS != ROWS - 1) return g_current_state[i + 1];
   return false;
 }
 
-int count_neighbours(int x, int y)
+int count_neighbours(const int i)
 {
-  int neighbours{0};
+  int neighbours{0}, t;
 
-  neighbours += check_left(x, y);
-  neighbours += check_right(x, y);
+  neighbours += check_left(i);
+  neighbours += check_right(i);
 
-  if (y > 0) {// check top
-    neighbours += g_current_state[x][y - 1];
-    neighbours += check_left(x, y - 1);
-    neighbours += check_right(x, y - 1);
+  if (i / ROWS >= 1) {  // check top
+    t = i - ROWS;
+    neighbours += g_current_state[t];
+    neighbours += check_left(t);
+    neighbours += check_right(t);
   }
 
-  if (y < COLUMNS) {// check bottom
-    neighbours += g_current_state[x][y + 1];
-    neighbours += check_left(x, y + 1);
-    neighbours += check_right(x, y + 1);
+  if (i / ROWS < COLUMNS - 1) {  // check bottom
+    t = i + ROWS;
+    neighbours += g_current_state[t];
+    neighbours += check_left(t);
+    neighbours += check_right(t);
   }
 
   return neighbours;
@@ -87,46 +84,39 @@ int count_neighbours(int x, int y)
 
 void update_cells()
 {
-  for (int y{0}; y < COLUMNS; ++y) {
-    for (int x{0}; x < ROWS; ++x) {
-      int neighbours{count_neighbours(x, y)};
-      if (neighbours == 3 || (neighbours == 2 && g_current_state[x][y]))
-        g_next_state[x][y] = true;
-      else
-        g_next_state[x][y] = false;
-    }
+  for (int i{0}; i < CELL_COUNT; ++i) {
+    int neighbours{count_neighbours(i)};
+    if (neighbours == 3 || (neighbours == 2 && g_current_state[i]))
+      g_next_state[i] = true;
+    else
+      g_next_state[i] = false;
   }
 
-  for (int y{0}; y < COLUMNS; ++y) {
-    for (int x{0}; x < ROWS; ++x) {
-      g_prev_state[x][y] = g_current_state[x][y];
-      g_current_state[x][y] = g_next_state[x][y];
-      g_next_state[x][y] = false;
-    }
+  for (int i{0}; i < CELL_COUNT; ++i) {
+    g_prev_state[i] = g_current_state[i];
+    g_current_state[i] = g_next_state[i];
+    g_next_state[i] = false;
   }
 }
 
 void redraw_cells(sf::RenderWindow *window)
 {
-  for (int y{0}; y < COLUMNS; ++y) {
-    for (int x{0}; x < ROWS; ++x) {
-      const sf::Color *cell_color{nullptr};
-      if (!g_draw_colored) {
-        if (g_current_state[x][y])
-          cell_color = &COLOR_LIVE_CELL;
-      }
-      else {
-        if (g_prev_state[x][y] && g_current_state[x][y])
-          cell_color = &COLOR_LIVE_CELL;
-        else if (g_current_state[x][y])
-          cell_color = &COLOR_JUST_BORN_CELL;
-        else if (g_prev_state[x][y])
-          cell_color = &COLOR_JUST_DIED_CELL;
-      }
-      if (cell_color) {
-        g_rects[x][y].setFillColor(*cell_color);
-        window->draw(g_rects[x][y]);
-      }
+  for (int i{0}; i < CELL_COUNT; ++i) {
+    const sf::Color *cell_color{nullptr};
+    if (!g_draw_colored && g_current_state[i]) {
+      cell_color = &COLOR_LIVE_CELL;
+    }
+    else if (g_draw_colored) {
+      if (g_prev_state[i] && g_current_state[i])
+        cell_color = &COLOR_LIVE_CELL;
+      else if (g_current_state[i])
+        cell_color = &COLOR_JUST_BORN_CELL;
+      else if (g_prev_state[i])
+        cell_color = &COLOR_JUST_DIED_CELL;
+    }
+    if (cell_color) {
+      g_rects[i].setFillColor(*cell_color);
+      window->draw(g_rects[i]);
     }
   }
 }
@@ -135,33 +125,35 @@ void catch_events(sf::RenderWindow *window)
 {
   static sf::Event event{};
   while (window->pollEvent(event)) {
-    if (event.type == sf::Event::Closed)
+    if (event.type == sf::Event::Closed) {
       window->close();
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
-    std::cout << "Game is closed." << std::endl;
-    window->close();
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
-    reset_cells();
-    std::cout << "Reset Gol!" << std::endl;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::P)) {
-    g_is_paused = !g_is_paused;
-    std::cout << "Game is paused: " << g_is_paused << std::endl;
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && g_is_paused) {
-    update_cells();
-  }
-  if (sf::Keyboard::isKeyPressed(sf::Keyboard::C)) {
-    g_draw_colored = !g_draw_colored;
-    std::cout << "Draw colored: " << g_draw_colored << std::endl;
+    }
+    if (event.type == sf::Event::KeyReleased) {
+      if (event.key.code == sf::Keyboard::Escape) {
+        std::cout << "Game is closed." << std::endl;
+        window->close();
+      }
+      if (event.key.code == sf::Keyboard::R) {
+        reset_cells();
+        std::cout << "Reset Gol!" << std::endl;
+      }
+      if (event.key.code == sf::Keyboard::P) {
+        g_is_paused = !g_is_paused;
+        std::cout << "Game paused: " << g_is_paused << std::endl;
+      }
+      if (event.key.code == sf::Keyboard::Space && g_is_paused) {
+        update_cells();
+      }
+      if (event.key.code == sf::Keyboard::C) {
+        g_draw_colored = !g_draw_colored;
+        std::cout << "Draw colored: " << g_draw_colored << std::endl;
+      }
+    }
   }
 }
 
 int main()
 {
-  // Setting random seed based on current time
   std::srand(static_cast<unsigned int>(std::time(nullptr)));
   reset_cells();
 
@@ -183,8 +175,7 @@ int main()
 
     catch_events(&window);
 
-    if (!g_is_paused)
-      update_cells();
+    if (!g_is_paused) update_cells();
 
     window.clear(COLOR_DEAD_CELL);
     redraw_cells(&window);
