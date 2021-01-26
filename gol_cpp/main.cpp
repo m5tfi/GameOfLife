@@ -1,127 +1,150 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <iostream>
+#include <memory>
+#include <random>
 
-inline constexpr int SCREEN_WIDTH{900};
-inline constexpr int SCREEN_HEIGHT{900};
-inline constexpr int CELL_SIZE{5};
-inline constexpr int ROWS{SCREEN_WIDTH / CELL_SIZE};
-inline constexpr int COLUMNS{SCREEN_HEIGHT / CELL_SIZE};
-inline constexpr int CELL_COUNT{ROWS * COLUMNS};
+class GOL {
+ private:
+  static constexpr int m_SCREEN_WIDTH{900};
+  static constexpr int m_SCREEN_HEIGHT{900};
+  static constexpr int m_CELL_SIZE{5};
+  static constexpr int m_ROWS{m_SCREEN_WIDTH / m_CELL_SIZE};
+  static constexpr int m_COLUMNS{m_SCREEN_HEIGHT / m_CELL_SIZE};
+  static constexpr int m_CELL_COUNT{m_ROWS * m_COLUMNS};
 
-inline const sf::Color COLOR_LIVE_CELL{sf::Color::Black};
-inline const sf::Color COLOR_DEAD_CELL{sf::Color::White};
-inline const sf::Color COLOR_JUST_DIED_CELL{sf::Color::Red};
-inline const sf::Color COLOR_JUST_BORN_CELL{sf::Color::Green};
+  sf::RectangleShape m_rects[m_CELL_COUNT];
+  bool m_prev_state[m_CELL_COUNT]{};
+  bool m_current_state[m_CELL_COUNT]{};
+  bool m_next_state[m_CELL_COUNT]{};
 
-sf::RectangleShape g_rects[CELL_COUNT];
-bool g_prev_state[CELL_COUNT]{};
-bool g_current_state[CELL_COUNT]{};
-bool g_next_state[CELL_COUNT]{};
+  bool m_draw_colored{true};
+  bool m_is_paused{false};
 
-bool g_draw_colored{true};
-bool g_is_paused{false};
-
-bool get_random_bool() { return std::rand() > RAND_MAX / 2; }
-
-void reset_cells()
-{
-  for (int i{0}; i < CELL_COUNT; ++i) {
-    g_prev_state[i] = false;
-    g_current_state[i] = get_random_bool();
-    g_next_state[i] = false;
+  static bool get_random_bool()
+  {
+    static auto seed{std::mt19937::result_type(std::time(nullptr))};
+    // static auto seed{std::mt19937::result_type(3)};  // for testing only
+    static std::mt19937 mersenne{seed};
+    static std::uniform_int_distribution rnd_bool{0, 1};
+    return rnd_bool(mersenne);
   }
-}
 
-void init_rects()
-{
-  int i{0};
-  for (int y{0}; y < COLUMNS; ++y) {
-    for (int x{0}; x < ROWS; ++x) {
-      g_rects[i] = sf::RectangleShape();
-      g_rects[i].setSize(sf::Vector2((float)CELL_SIZE, (float)CELL_SIZE));
-      g_rects[i].setPosition((float)x * CELL_SIZE, (float)y * CELL_SIZE);
-      ++i;
+ public:
+  const sf::Color COLOR_LIVE_CELL{sf::Color::Black};
+  const sf::Color COLOR_DEAD_CELL{sf::Color::White};
+  const sf::Color COLOR_JUST_DIED_CELL{sf::Color::Red};
+  const sf::Color COLOR_JUST_BORN_CELL{sf::Color::Green};
+
+ public:
+  explicit GOL()
+  {
+    int i{0};
+    for (int y{0}; y < m_COLUMNS; ++y) {
+      for (int x{0}; x < m_ROWS; ++x) {
+        m_rects[i] = sf::RectangleShape();
+        m_rects[i].setSize(sf::Vector2((float)m_CELL_SIZE, (float)m_CELL_SIZE));
+        m_rects[i].setPosition((float)x * m_CELL_SIZE, (float)y * m_CELL_SIZE);
+        ++i;
+      }
+    }
+
+    reset_cells();
+  }
+
+  static constexpr int get_screen_width() { return m_SCREEN_WIDTH; }
+  static constexpr int get_screen_height() { return m_SCREEN_HEIGHT; }
+  constexpr bool is_game_paused() const { return m_is_paused; }
+  constexpr bool is_game_colored() const { return m_is_paused; }
+  constexpr void toggle_game_paused() { m_is_paused = !m_is_paused; }
+  constexpr void toggle_draw_colored() { m_draw_colored = !m_draw_colored; }
+
+  void reset_cells()
+  {
+    for (int i{0}; i < m_CELL_COUNT; ++i) {
+      m_prev_state[i] = false;
+      m_current_state[i] = get_random_bool();
+      m_next_state[i] = false;
     }
   }
-}
 
-bool check_left(const int i)
-{
-  if (i % ROWS != 0) return g_current_state[i - 1];
-  return false;
-}
-
-bool check_right(const int i)
-{
-  if (i % ROWS != ROWS - 1) return g_current_state[i + 1];
-  return false;
-}
-
-int count_neighbours(const int i)
-{
-  int neighbours{0}, t;
-
-  neighbours += check_left(i);
-  neighbours += check_right(i);
-
-  if (i / ROWS >= 1) {  // check top
-    t = i - ROWS;
-    neighbours += g_current_state[t];
-    neighbours += check_left(t);
-    neighbours += check_right(t);
+  constexpr bool check_left(const int i)
+  {
+    if (i % m_ROWS != 0) return m_current_state[i - 1];
+    return false;
   }
 
-  if (i / ROWS < COLUMNS - 1) {  // check bottom
-    t = i + ROWS;
-    neighbours += g_current_state[t];
-    neighbours += check_left(t);
-    neighbours += check_right(t);
+  constexpr bool check_right(const int i)
+  {
+    if (i % m_ROWS != m_ROWS - 1) return m_current_state[i + 1];
+    return false;
   }
 
-  return neighbours;
-}
+  constexpr int count_neighbours(const int i)
+  {
+    int neighbours{0}, t;
 
-void update_cells()
-{
-  for (int i{0}; i < CELL_COUNT; ++i) {
-    int neighbours{count_neighbours(i)};
-    if (neighbours == 3 || (neighbours == 2 && g_current_state[i]))
-      g_next_state[i] = true;
-    else
-      g_next_state[i] = false;
-  }
+    neighbours += check_left(i);
+    neighbours += check_right(i);
 
-  for (int i{0}; i < CELL_COUNT; ++i) {
-    g_prev_state[i] = g_current_state[i];
-    g_current_state[i] = g_next_state[i];
-    g_next_state[i] = false;
-  }
-}
-
-void redraw_cells(sf::RenderWindow *window)
-{
-  for (int i{0}; i < CELL_COUNT; ++i) {
-    const sf::Color *cell_color{nullptr};
-    if (!g_draw_colored && g_current_state[i]) {
-      cell_color = &COLOR_LIVE_CELL;
+    if (i / m_ROWS >= 1) {  // check top
+      t = i - m_ROWS;
+      neighbours += m_current_state[t];
+      neighbours += check_left(t);
+      neighbours += check_right(t);
     }
-    else if (g_draw_colored) {
-      if (g_prev_state[i] && g_current_state[i])
+
+    if (i / m_ROWS < m_COLUMNS - 1) {  // check bottom
+      t = i + m_ROWS;
+      neighbours += m_current_state[t];
+      neighbours += check_left(t);
+      neighbours += check_right(t);
+    }
+
+    return neighbours;
+  }
+
+  constexpr void update_cells()
+  {
+    for (int i{0}; i < m_CELL_COUNT; ++i) {
+      int neighbours{count_neighbours(i)};
+      if (neighbours == 3 || (neighbours == 2 && m_current_state[i]))
+        m_next_state[i] = true;
+      else
+        m_next_state[i] = false;
+    }
+
+    for (int i{0}; i < m_CELL_COUNT; ++i) {
+      m_prev_state[i] = m_current_state[i];
+      m_current_state[i] = m_next_state[i];
+      m_next_state[i] = false;
+    }
+  }
+
+  constexpr void redraw_cells(sf::RenderWindow *window)
+  {
+    for (int i{0}; i < m_CELL_COUNT; ++i) {
+      const sf::Color *cell_color{nullptr};
+      if (!m_draw_colored && m_current_state[i]) {
         cell_color = &COLOR_LIVE_CELL;
-      else if (g_current_state[i])
-        cell_color = &COLOR_JUST_BORN_CELL;
-      else if (g_prev_state[i])
-        cell_color = &COLOR_JUST_DIED_CELL;
-    }
-    if (cell_color) {
-      g_rects[i].setFillColor(*cell_color);
-      window->draw(g_rects[i]);
+      }
+      else if (m_draw_colored) {
+        if (m_prev_state[i] && m_current_state[i])
+          cell_color = &COLOR_LIVE_CELL;
+        else if (m_current_state[i])
+          cell_color = &COLOR_JUST_BORN_CELL;
+        else if (m_prev_state[i])
+          cell_color = &COLOR_JUST_DIED_CELL;
+      }
+      if (cell_color) {
+        m_rects[i].setFillColor(*cell_color);
+        window->draw(m_rects[i]);
+      }
     }
   }
-}
+};
 
-void catch_events(sf::RenderWindow *window)
+void catch_events(sf::RenderWindow *window, GOL *gol)
 {
   static sf::Event event{};
   while (window->pollEvent(event)) {
@@ -134,19 +157,19 @@ void catch_events(sf::RenderWindow *window)
         window->close();
       }
       if (event.key.code == sf::Keyboard::R) {
-        reset_cells();
+        gol->reset_cells();
         std::cout << "Reset Gol!" << std::endl;
       }
       if (event.key.code == sf::Keyboard::P) {
-        g_is_paused = !g_is_paused;
-        std::cout << "Game paused: " << g_is_paused << std::endl;
+        gol->toggle_game_paused();
+        std::cout << "Game paused: " << gol->is_game_paused() << std::endl;
       }
-      if (event.key.code == sf::Keyboard::Space && g_is_paused) {
-        update_cells();
+      if (event.key.code == sf::Keyboard::Space && gol->is_game_paused()) {
+        gol->update_cells();
       }
       if (event.key.code == sf::Keyboard::C) {
-        g_draw_colored = !g_draw_colored;
-        std::cout << "Draw colored: " << g_draw_colored << std::endl;
+        gol->toggle_draw_colored();
+        std::cout << "Draw colored: " << gol->is_game_colored() << std::endl;
       }
     }
   }
@@ -154,13 +177,11 @@ void catch_events(sf::RenderWindow *window)
 
 int main()
 {
-  std::srand(static_cast<unsigned int>(std::time(nullptr)));
-  reset_cells();
+  auto gol{std::make_unique<GOL>()};
 
-  init_rects();
-
-  sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT),
-                          "Game of life");
+  sf::RenderWindow window(
+      sf::VideoMode(GOL::get_screen_width(), GOL::get_screen_height()),
+      "Game of life");
 
   sf::Clock clock{sf::Clock()};
   sf::Time last_time{clock.getElapsedTime()};
@@ -173,12 +194,12 @@ int main()
     last_time = current_time;
     window.setTitle("GameOfLife, fps:" + std::to_string(fps));
 
-    catch_events(&window);
+    catch_events(&window, gol.get());
 
-    if (!g_is_paused) update_cells();
+    if (!gol->is_game_paused()) gol->update_cells();
 
-    window.clear(COLOR_DEAD_CELL);
-    redraw_cells(&window);
+    window.clear(gol->COLOR_DEAD_CELL);
+    gol->redraw_cells(&window);
     window.display();
   }
 
